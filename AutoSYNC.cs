@@ -6,23 +6,28 @@ using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 
-using ScriptPortal.Vegas;
+using ScriptPortal.Vegas; 
 
 public class EntryPoint {
-
+	
 	public void FromVegas(Vegas vegas) {
-	Vegas myVegas;
+
 		Project proj = vegas.Project;
+		MarkerList allMarkers = proj.Markers;
+
         foreach (Track track in proj.Tracks)
         {		
-			
-				if(track.Name == "Sync") MessageBox.Show("Audio a Sync detectado");
-				foreach (TrackEvent trackEvent in track.Events)
-				{
-					if(trackEvent.MediaType == MediaType.Audio){
-						
+				//Audio detection for later on...
+				if(track.Name == "Sync"){
+					//MessageBox.Show("Audio a Sync detectado");
+					foreach (TrackEvent trackEvent in track.Events)
+					{
+						if(trackEvent.MediaType == MediaType.Audio){
+							
+						}
 					}
-				}
+				}					
+				
 		}
 		foreach (Track track in proj.Tracks)
         {
@@ -35,30 +40,29 @@ public class EntryPoint {
 					
 					if(vevntEnv.HasEnvelope(EnvelopeType.Velocity)){
 						//Sensibilidad Detectada
-						
-						
+							
 						Envelope sensitivity = vevntEnv.FindByType(EnvelopeType.Velocity);
 						sensitivity.Points.Clear();
 						
-						Timecode timeStart = trackEvent.Start; //Inicio del clip en milisegundos.
-						
-						
-						Timecode timeFrame = new Timecode(1600);
-						Timecode timeFrame2 = new Timecode(2600);
-						Timecode timeFrame3 = new Timecode(3600);
-						EnvelopePoint point_A = new EnvelopePoint(timeFrame,5);
-						EnvelopePoint point_B = new EnvelopePoint(timeFrame2,2);
-						EnvelopePoint point_C = new EnvelopePoint(timeFrame3,1);
-						sensitivity.Points.Add(point_A);
+						Timecode timeFirst = trackEvent.Start; //Inicio del clip en milisegundos.				
+						Timecode timeLast = trackEvent.End;			
+
+						double jump = (timeLast.ToMilliseconds() - timeFirst.ToMilliseconds())/3;
+						Timecode timeSecond = Timecode.FromMilliseconds(jump);
+						Timecode timeThird = Timecode.FromMilliseconds(jump+jump);
+					
+						EnvelopePoint point_B = new EnvelopePoint(timeSecond,0.15);
 						sensitivity.Points.Add(point_B);
+						EnvelopePoint point_C = new EnvelopePoint(timeThird,0.15);
 						sensitivity.Points.Add(point_C);
-						
-						
-						
-						
+						EnvelopePoint point_D = new EnvelopePoint(timeLast,3);
+						sensitivity.Points.Add(point_D);
+				
 					}
 				}
             }
         }
 	}
+}
+
 }
