@@ -13,9 +13,8 @@ public class EntryPoint {
 	public void FromVegas(Vegas vegas) {
 
 		Project proj = vegas.Project;
-		MarkerList allMarkers = proj.Markers;
-
-        foreach (Track track in proj.Tracks)
+		
+        /*foreach (Track track in proj.Tracks)
         {		
 				//Audio detection for later on...
 				if(track.Name == "Sync"){
@@ -28,41 +27,50 @@ public class EntryPoint {
 					}
 				}					
 				
-		}
+		}*/
+		
 		foreach (Track track in proj.Tracks)
         {
+			
 			foreach (TrackEvent trackEvent in track.Events)
 			{					
-				if(trackEvent.MediaType == MediaType.Video){
+				if(trackEvent.MediaType == MediaType.Video && trackEvent.Selected ){
 					
 					VideoEvent vevnt = (VideoEvent)trackEvent;
 					Envelopes vevntEnv = vevnt.Envelopes;
 					
-					if(vevntEnv.HasEnvelope(EnvelopeType.Velocity)){
-						//Sensibilidad Detectada
-							
-						Envelope sensitivity = vevntEnv.FindByType(EnvelopeType.Velocity);
-						sensitivity.Points.Clear();
-						
-						Timecode timeFirst = trackEvent.Start; //Inicio del clip en milisegundos.				
-						Timecode timeLast = trackEvent.End;			
-
-						double jump = (timeLast.ToMilliseconds() - timeFirst.ToMilliseconds())/3;
-						Timecode timeSecond = Timecode.FromMilliseconds(jump);
-						Timecode timeThird = Timecode.FromMilliseconds(jump+jump);
-					
-						EnvelopePoint point_B = new EnvelopePoint(timeSecond,0.15);
-						sensitivity.Points.Add(point_B);
-						EnvelopePoint point_C = new EnvelopePoint(timeThird,0.15);
-						sensitivity.Points.Add(point_C);
-						EnvelopePoint point_D = new EnvelopePoint(timeLast,3);
-						sensitivity.Points.Add(point_D);
-				
+					if(!vevntEnv.HasEnvelope(EnvelopeType.Velocity)) // Comprobamos si el video tiene envolvente
+					{
+						Envelope envelope = new Envelope(EnvelopeType.Velocity);
+						vevntEnv.Add(envelope);
 					}
+					
+					Envelope sensitivity = vevntEnv.FindByType(EnvelopeType.Velocity);
+					sensitivity.Points.Clear();
+					
+					Timecode timeFirst = trackEvent.Start; //Inicio del clip en milisegundos.							
+					Timecode timeLast = trackEvent.End;	//Fin del clip en milisegundos.		
+					
+					
+					sensitivity.Points.GetPointAtX(Timecode.FromMilliseconds(0)).Y=3; //Modificamos el valor del punto inicial		
+					
+					foreach (Marker marker in proj.Markers) //Recorremos todos los marcadores	
+					{
+						if( marker.Position > timeFirst && marker.Position < timeLast && marker.Label=="" )  // Miramos si el marcador esta dentro del video
+						{
+							if(sensitivity.Points.GetPointAtX(marker.Position-timeFirst) == null){ // Comprobamos que no exista ya un punto en dicha posicion.
+					
+								EnvelopePoint point = new EnvelopePoint( marker.Position-timeFirst,0.15); //Creamos un nuevo punto en el marcador
+								sensitivity.Points.Add(point);
+				
+							}
+						}		
+					}	
+					
+					EnvelopePoint pointEnd = new EnvelopePoint(timeLast,3); //Añadimos el punto final
+					sensitivity.Points.Add(pointEnd);	
 				}
             }
         }
 	}
-}
-
 }
